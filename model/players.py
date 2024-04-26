@@ -1,7 +1,4 @@
 """ database dependencies to support sqliteDB examples """
-from random import randrange
-from datetime import date
-import os, base64
 import json
 
 from __init__ import app, db

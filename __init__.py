@@ -1,11 +1,11 @@
 from flask import Flask
-from flask_cors import CORS
+from flask_cors import CORS # type: ignore
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask_migrate import Migrate # type: ignore
 import os
 
 """
-These object can be used throughout project.
+These objects can be used throughout the project.
 1.) Objects from this file can be included in many blueprints
 2.) Isolating these object definitions avoids duplication and circular dependencies
 """
@@ -22,6 +22,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY') or 'SECRET_KEY'
 app.config['SECRET_KEY'] = SECRET_KEY
 db = SQLAlchemy()
 Migrate(app, db)
+db.init_app(app)
 
 # Images storage
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # maximum size of uploaded content

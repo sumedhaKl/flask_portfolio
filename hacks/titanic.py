@@ -12,7 +12,7 @@ titanic_data = sns.load_dataset('titanic')
 titanic_data.drop(['alive', 'who', 'adult_male', 'class', 'embark_town', 'deck'], axis=1, inplace=True)
 titanic_data.dropna(inplace=True)
 titanic_data['sex'] = titanic_data['sex'].apply(lambda x: 1 if x == 'male' else 0)
-titanic_data['alone'] = titanic_data['alone'].apply(lambda x: 1 if x == True else 0)
+titanic_data['alone'] = titanic_data['alone'].apply(lambda x: 1 if x else 0)
 
 # Encode categorical variables
 enc = OneHotEncoder(handle_unknown='ignore')

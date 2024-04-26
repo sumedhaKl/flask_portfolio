@@ -1,6 +1,6 @@
 import json, jwt
 from flask import Blueprint, request, jsonify, current_app, Response
-from flask_restful import Api, Resource # used for REST API building
+from flask_restful import Api, Resource #type: ignore
 from datetime import datetime
 from auth_middleware import token_required
 
@@ -130,6 +130,6 @@ class UserAPI:
 
             
     # building RESTapi endpoint
-    api.add_resource(_CRUD, '/')
-    api.add_resource(_Security, '/authenticate')
+    api.add_resource(_CRUD, '/') #type: ignore
+    api.add_resource(_Security, '/authenticate') #type: ignore
     
