@@ -1,8 +1,8 @@
-from sklearn.tree import DecisionTreeClassifier # type: ignore
-from sklearn.linear_model import LogisticRegression # type: ignore
-from sklearn.preprocessing import OneHotEncoder # type: ignore
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
-import seaborn as sns # type: ignore
+import seaborn as sns
 import numpy as np
 
 class TitanicModel:

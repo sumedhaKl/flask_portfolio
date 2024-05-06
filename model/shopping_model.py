@@ -1,14 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask import current_app
-from sklearn.tree import DecisionTreeClassifier #type: ignore
-from sklearn.linear_model import LogisticRegression #type: ignore
-from sklearn.preprocessing import OneHotEncoder #type: ignore
+from sqlalchemy import create_engine
 import pandas as pd
-from sqlite3 import IntegrityError
+from sklearn.tree import DecisionTreeClassifier 
+from sklearn.linear_model import LogisticRegression
 
 db = SQLAlchemy()
 
-class ShoppingModel(db.Model): #type: ignore
+class ShoppingModel(db.Model):
+    
     _instance = None
     __tablename__ = 'shoppingorders'
 
@@ -16,91 +15,69 @@ class ShoppingModel(db.Model): #type: ignore
     category = db.Column(db.String, nullable=False)
     items_ordered = db.Column(db.String)
     quantity_ordered = db.Column(db.String)
-    price = db.Column(db.String)
-    total = db.Column(db.String)
+    price_per_item = db.Column(db.String) 
 
-    def __init__(self, category=None, items_ordered=None, quantity_ordered=None, price=None, total=None):
-        self.category = category
-        self.items_ordered = items_ordered
-        self.quantity_ordered = quantity_ordered
-        self.price = price
-        self.total = total
-
+    def __init__(self):
         self.model = None
         self.dt = None
-        self.features = ["order_id", "category", "items_ordered", "quantity_ordered", "price", "total"]
-        self.shopping_data = None
-        self.encoder = OneHotEncoder(handle_unknown='ignore')
+        self.features = ["category", "items_ordered", "quantity_ordered", "price_per_item"]
+        self.target = "total_price"
+        self.shopping_data = 'instance/volumes/shoppingorders.db'
+        self.encoder = None  
 
         self._clean()
         self._train()
 
     def _clean(self):
-        with current_app.app_context():
-            query = "SELECT * FROM shoppingorders"
-            self.shopping_data = pd.read_sql_query(query, db.session.bind)
-        if self.shopping_data.empty:
-            raise ValueError("No data available for training.")
+        try:
+            engine = create_engine(f'sqlite:///{self.shopping_data}')
+            df = pd.read_sql_table(self.__tablename__, engine)
+
+            required_columns = self.features + [self.target]
+            if all(col in df.columns for col in required_columns):
+                df = df[required_columns]
+                df.dropna(inplace=True)
+                if 'price_per_item' not in df.columns:
+                    raise ValueError("Error: 'price_per_item' column not found in the dataframe.")
+                self.shopping_data = df
+                print("Data cleaning successful.")
+                print("DataFrame columns:", df.columns)
+            else:
+                raise ValueError("Error: Required columns not found in the dataframe.")
+        except Exception as e:
+            print(f"Error cleaning data: {e}")
 
     def _train(self):
-        X = self.shopping_data[self.features]
-        y = self.shopping_data['price']
+        try:
+            X = self.shopping_data[self.features]
+            y = self.shopping_data[self.target]
 
-        self.model = LogisticRegression(max_iter=1000)
-        self.model.fit(X, y)
+            self.model = LogisticRegression(max_iter=1000)
+            self.model.fit(X, y)
 
-        self.dt = DecisionTreeClassifier()
-        self.dt.fit(X, y)
-       
+            self.dt = DecisionTreeClassifier()
+            self.dt.fit(X, y)
+        except Exception as e:
+            print(f"Error training model: {e}")
+
     @classmethod    
     def get_instance(cls):
         if cls._instance is None:
             cls._instance = cls()
-        cls._instance._clean()
-        cls._instance._train()
         return cls._instance
 
-    def predict(self, data):
-        selected_items = [product['price'] for product in data]
-        total_price = sum(selected_items)
-        return total_price
-
-    def create(self):
+    def predict(self, input_data):
         try:
-            db.session.add(self)
-            db.session.commit()
-            return self
-        except IntegrityError:
-            db.session.rollback()
-            return None
-
-    @classmethod
-    def get_by_id(cls, item_id):
-        return cls.query.get(id=item_id)
-
-    @classmethod
-    def get_all(cls):
-        return cls.query.all()
-
-    def update(self, new_data):
-        for key, value in new_data.items():
-            setattr(self, key, value)
-        db.session.commit()
-        return self
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    @staticmethod
-    def initShoppingModel():
-        with current_app.app_context():
-            db.create_all()
-            order = ShoppingModel(category="Food", items_ordered="bread", quantity_ordered=1, price=2, total=3)
-            try:
-                order.create()
-            except IntegrityError:
-                db.session.rollback()
-                
-        if __name__ == "__main__":
-            ShoppingModel.init_shopping_model()
+            price_per_item = int(input_data["price_per_item"])
+            total_price = price_per_item
+            return {'total_price': total_price}
+        except KeyError:
+            print("Error: 'price_per_item' key not found in input data.")
+            return {'total_price': None}
+        except ValueError:
+            print("Error: 'price_per_item' value is not a valid integer.")
+            return {'total_price': None}
+    
+    def feature_weights(self):
+        importances = self.dt.feature_importances_
+        return {feature: importance for feature, importance in zip(self.features, importances)}

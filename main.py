@@ -1,19 +1,17 @@
-from flask import render_template, request
-from flask_cli import AppGroup #type: ignore
-from flask_cors import CORS #type: ignore
-from __init__ import app
-from model.shopping_model import ShoppingModel  
-from projects.projects import app_projects
-from api.shopping import shopping_api
+from flask import Flask, render_template
+from flask_cors import CORS
+from flask_restful import Api
+from api.shopping import Predict
+
+app = Flask(__name__)
 
 # Register CORS for cross-origin requests
 CORS(app, supports_credentials=True, origins=['http://localhost:4100', 'http://127.0.0.1:4100', 'https://nighthawkcoders.github.io'])
 
-# Register API blueprint
-app.register_blueprint(shopping_api)
+api = Api(app)
 
-# Register app pages
-app.register_blueprint(app_projects)
+# Register API resource
+api.add_resource(Predict, '/api/shopping/predict')
 
 # Error handler for 404 Not Found
 @app.errorhandler(404)
@@ -29,23 +27,6 @@ def index():
 @app.route('/table/')
 def table():
     return render_template("table.html")
-
-# Before request hook to handle CORS
-@app.before_request
-def before_request():
-    allowed_origin = request.headers.get('Origin')
-    if allowed_origin in ['http://localhost:4100', 'http://127.0.0.1:4100', 'https://nighthawkcoders.github.io']:
-        CORS._origins = allowed_origin
-
-# Custom CLI commands
-custom_cli = AppGroup('custom', help='Custom commands')
-
-@custom_cli.command('generate_data')
-def generate_data():
-    ShoppingModel.init_shopping_model()
-    print("Data generated successfully.")
-
-app.cli.add_command(custom_cli)
 
 # Run the application
 if __name__ == "__main__":

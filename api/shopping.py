@@ -2,18 +2,19 @@ import sys
 
 sys.path.append('/home/sumi/vscode/flask_portfolio')
 
-from flask import Blueprint, request
-from flask_restful import Api, Resource #type: ignore
+from flask import request
+from flask_restful import Resource
+from flask_cors import cross_origin
 from model.shopping_model import ShoppingModel 
 
-shopping_api = Blueprint('shopping_api', __name__, url_prefix='/api/shopping')
-api = Api(shopping_api)
-
 class Predict(Resource):
+    @cross_origin(origins=['http://localhost:4100', 'http://127.0.0.1:4100', 'https://nighthawkcoders.github.io'])
     def post(self):
         data = request.json
+        print("Received data:", data)
+        
         shopping_model = ShoppingModel.get_instance()
+        
         result = shopping_model.predict(data)
-        return {'message': 'Predict resource', 'total_price': result}
-
-api.add_resource(Predict, '/predict')
+        
+        return {'total_price': result['total_price']}
